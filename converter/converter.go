@@ -19,6 +19,7 @@ type Config struct {
 	SourcePath       string
 	StoreToDir       string
 	SkipHTMLDecoding bool
+	BatchSize int64
 }
 
 const (
@@ -108,11 +109,11 @@ func Convert(cfg Config) (err error) {
 	for _, sf := range sourceFiles {
 		f := filepath.Base(sf)
 		typeName := f[:len(f)-len(filepath.Ext(f))]
-		resultFile := filepath.Join(cfg.StoreToDir,
+		resultFileBasePath := filepath.Join(cfg.StoreToDir,
 			fmt.Sprintf("%s.%s", typeName, cfg.ResultFormat))
 		wg.Add(1)
 		log.Printf("[%s] Converting is started", typeName)
-		go convertXMLFile(&wg, typeName, sf, resultFile)
+		go convertXMLFile(&wg, typeName, sf, resultFileBasePath)
 	}
 
 	wg.Wait()
@@ -120,7 +121,7 @@ func Convert(cfg Config) (err error) {
 	return
 }
 
-func convertXMLFile(wg *sync.WaitGroup, typeName string, xmlFilePath string, resultFilePath string) {
+func convertXMLFile(wg *sync.WaitGroup, typeName string, xmlFilePath string, resultFileBasePath string) {
 	xmlFile, err := os.Open(xmlFilePath)
 	if err != nil {
 		log.Printf("[%s] Error: %s", typeName, err)
@@ -138,9 +139,9 @@ func convertXMLFile(wg *sync.WaitGroup, typeName string, xmlFilePath string, res
 	var total, converted int64
 	switch converterConfig.ResultFormat {
 	case "csv":
-		total, converted, err = convertToCSV(typeName, xmlFile, resultFile, converterConfig)
+		total, converted, err = convertToCSV(typeName, xmlFile, resultFileBasePath, converterConfig)
 	case "json":
-		total, converted, err = convertToJSON(typeName, xmlFile, resultFile, converterConfig)
+		total, converted, err = convertToJSON(typeName, xmlFile, resultFileBasePath, converterConfig)
 	}
 
 	if err != nil {
