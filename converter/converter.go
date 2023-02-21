@@ -19,7 +19,7 @@ type Config struct {
 	SourcePath       string
 	StoreToDir       string
 	SkipHTMLDecoding bool
-	BatchSize int64
+	BatchSize        int64
 }
 
 const (
@@ -129,7 +129,7 @@ func convertXMLFile(wg *sync.WaitGroup, typeName string, xmlFilePath string, res
 	}
 	defer xmlFile.Close()
 
-	resultFile, err := os.Create(resultFilePath)
+	resultFile, err := os.Create(resultFileBasePath)
 	if err != nil {
 		log.Printf("[%s] Error: %s", typeName, err)
 		return
@@ -139,9 +139,9 @@ func convertXMLFile(wg *sync.WaitGroup, typeName string, xmlFilePath string, res
 	var total, converted int64
 	switch converterConfig.ResultFormat {
 	case "csv":
-		total, converted, err = convertToCSV(typeName, xmlFile, resultFileBasePath, converterConfig)
+		total, converted, err = convertToCSV(typeName, xmlFile, resultFile, resultFileBasePath, converterConfig)
 	case "json":
-		total, converted, err = convertToJSON(typeName, xmlFile, resultFileBasePath, converterConfig)
+		total, converted, err = convertToJSON(typeName, xmlFile, resultFile, converterConfig)
 	}
 
 	if err != nil {

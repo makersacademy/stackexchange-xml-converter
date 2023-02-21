@@ -2,22 +2,36 @@ package converter
 
 import (
 	"encoding/csv"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/SkobelevIgor/stackexchange-xml-converter/encoders"
 )
 
-func convertToCSV(typeName string, xmlFile *os.File, csvFileBasePath *os.File, cfg Config) (total int64, converted int64, err error) {
-	csvWriter := nil // csv.NewWriter(csvFile)
-	// defer csvWriter.Flush()
+func getWriterForNewBatch(encoder encoders.Encoder, basePath string, batchNum int64) (resultFile *os.File, csvWriter *csv.Writer, err error) {
+	resultFilePath := fmt.Sprintf("%s-%06d", basePath, batchNum)
+	resultFile, err = os.Create(resultFilePath)
+	if err != nil {
+		return
+	}
+	csvWriter = csv.NewWriter(resultFile)
 
+	err = csvWriter.Write(encoder.GetCSVHeaderRow())
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func convertToCSV(typeName string, xmlFile *os.File, csvFile *os.File, resultFileBasePath string, cfg Config) (total int64, converted int64, err error) {
 	encoder, err := encoders.NewEncoder(typeName)
 	if err != nil {
 		return
 	}
 
-	err = csvWriter.Write(encoder.GetCSVHeaderRow())
+	resultFile, csvWriter, err := getWriterForNewBatch(encoder, resultFileBasePath, 1)
 	if err != nil {
 		return
 	}
@@ -28,13 +42,16 @@ func convertToCSV(typeName string, xmlFile *os.File, csvFileBasePath *os.File, c
 	for iterator.Next() {
 		total++
 
-		if total % cfg.BatchSize == 1) {
-			if csvWRiter != nil {
-				csvWriter.Flush()
+		if total > 1 && total%cfg.BatchSize == 1 {
+			log.Printf("[%s] Starting new Batch: %d", typeName, total)
+			csvWriter.Flush()
+			resultFile.Close()
+
+			batchNum := 1 + total/cfg.BatchSize
+			resultFile, csvWriter, err = getWriterForNewBatch(encoder, resultFileBasePath, batchNum)
+			if err != nil {
+				return
 			}
-			batchNum := total / cfg.BatchSize
-			resultFilePath := fmt.Sprintf("%s-%06d", csvFileBasePath, batchNum)
-			csvWriter = csv.NewWriter(resultFilePath)
 		}
 
 		encoder, _ := encoders.NewEncoder(typeName)
@@ -55,6 +72,9 @@ func convertToCSV(typeName string, xmlFile *os.File, csvFileBasePath *os.File, c
 		}
 		converted++
 	}
+
+	csvWriter.Flush()
+	resultFile.Close()
 
 	return
 }

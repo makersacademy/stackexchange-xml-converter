@@ -19,13 +19,8 @@ func convertToJSON(typeName string, xmlFile *os.File, jsonFile *os.File, cfg Con
 	w := bufio.NewWriterSize(jsonFile, WriteBufferSize)
 	defer w.Flush()
 
-	w.WriteByte('[')
-
 	var iErr error
 	for iterator.Next() {
-		if total > 0 && iErr == nil {
-			w.WriteByte(',')
-		}
 		total++
 		encoder, _ := encoders.NewEncoder(typeName)
 		iErr = iterator.Decode(&encoder)
@@ -52,8 +47,6 @@ func convertToJSON(typeName string, xmlFile *os.File, jsonFile *os.File, cfg Con
 
 		converted++
 	}
-
-	w.WriteByte(']')
 
 	return
 }

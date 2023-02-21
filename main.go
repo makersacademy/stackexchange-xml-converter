@@ -14,6 +14,7 @@ func main() {
 	flag.StringVar(&cfg.SourcePath, "source-path", "", "Path to XML file(s)")
 	flag.StringVar(&cfg.StoreToDir, "store-to-dir", "", "Path where to store CSV file(s)")
 	flag.BoolVar(&cfg.SkipHTMLDecoding, "skip-html-decoding", false, "Path where to store CSV file(s)")
+	flag.Int64Var(&cfg.BatchSize, "output-batch-size", 10000, "Number of records per output CSV file")
 	flag.Parse()
 
 	var err error
