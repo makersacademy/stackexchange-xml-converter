@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/SkobelevIgor/stackexchange-xml-converter/encoders"
 )
@@ -65,7 +66,15 @@ func convertToCSV(typeName string, xmlFile *os.File, csvFile *os.File, resultFil
 			encoder.EscapeFields()
 		}
 
-		iErr = csvWriter.Write(encoder.GETCSVRow())
+		row := encoder.GETCSVRow()
+		var escapedRow []string
+
+		// Escape \. as described in https://www.postgresql.org/docs/current/sql-copy.html
+		for _, s := range row {
+			escapedRow = append(escapedRow, strings.ReplaceAll(s, "\\.", "\\\\."))
+		}
+
+		iErr = csvWriter.Write(escapedRow)
 		if iErr != nil {
 			log.Printf("[%s] Error: %s", typeName, iErr)
 			continue
